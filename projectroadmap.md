@@ -1,8 +1,8 @@
 Phase 1: Core Functionality (The Must-Haves)
 
-- [ ] 1.1 Project Setup: Install typer, rich, and pydantic.
+- [ X ] 1.1 Project Setup: Install typer, rich, and pydantic.
 
-- [ ] 1.2 Data Persistence: Define the Task model and create functions to load/save tasks to schedule.json.
+- [ X ] 1.2 Data Persistence: Define the Task model and create functions to load/save tasks to schedule.json.
 
 - [ ] 1.3 Fast Add Command: Implement the workweek add command with natural date parsing.
 
