@@ -4,7 +4,7 @@ Phase 1: Core Functionality (The Must-Haves)
 
 - [X] 1.2 Data Persistence: Define the Task model and create functions to load/save tasks to schedule.json.
 
-- [ ] 1.3 Fast Add Command: Implement the workweek add command with natural date parsing.
+- [X] 1.3 Fast Add Command: Implement the workweek add command with natural date parsing.
 
 - [ ] 1.4 14-Day View: Implement the workweek view command to filter and display the current 14 days in a simple list.
 
