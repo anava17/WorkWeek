@@ -5,11 +5,13 @@ from __future__ import annotations
 import json
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
 
+import parsedatetime as pdt
 import typer
+from dateutil import parser as dateutil_parser
 from pydantic import BaseModel, Field
 from rich import print
 
@@ -35,6 +37,40 @@ class Task(BaseModel):
 
     # Pydantic v2 configuration
     model_config = {"extra": "forbid"}
+
+
+def parse_datetime(date_str: str) -> Optional[datetime]:
+    """Parse a natural language date string into a datetime object.
+
+    Supports formats like:
+    - "tomorrow @ 9am"
+    - "next monday"
+    - "in 3 days"
+    - "2025-11-15"
+    - "11/15/2025 2pm"
+
+    Returns None if parsing fails.
+    """
+    if not date_str or not date_str.strip():
+        return None
+
+    # try parsedatetime first (handles relative dates well)
+    cal = pdt.Calendar()
+    try:
+        dt, parse_status = cal.parseDT(date_str, sourceTime=datetime.now())
+        # parse_status: 0=no match, 1=date match, 2=time match, 3=both
+        if parse_status > 0:
+            return dt
+    except Exception:
+        pass
+
+    # fall back to dateutil parser (handles ISO & other formats)
+    try:
+        return dateutil_parser.parse(date_str, fuzzy=False)
+    except Exception:
+        pass
+
+    return None
 
 
 def _task_to_serializable(t: Task) -> dict:
@@ -105,14 +141,36 @@ def load_tasks() -> List[Task]:
 
 
 @app.command()
-def add(title: str = typer.Argument(..., help="Task title")):
-    """Fast add a task. Natural language parsing will be added later."""
+def add(
+    title: str = typer.Argument(..., help="Task title"),
+    when: Optional[str] = typer.Option(None, "--when", "-w", help="When to schedule (e.g., 'tomorrow @ 9am', 'next monday')"),
+    category: Optional[str] = typer.Option(None, "--category", "-c", help="Task category (e.g., 'Work', 'School')"),
+):
+    """Fast add a task with optional natural language date parsing.
+
+    Examples:
+      workweek add "Design mockups" --when "tomorrow @ 2pm" --category "Work"
+      workweek add "Study for exam" --when "next friday"
+      workweek add "Quick task"  (no date specified)
+    """
     tasks = load_tasks()
     next_id = (max((t.id for t in tasks), default=0) + 1) if tasks else 1
-    task = Task(id=next_id, title=title)
+
+    # parse the when date if provided
+    parsed_when = None
+    if when:
+        parsed_when = parse_datetime(when)
+        if not parsed_when:
+            print(f"[bold red]Could not parse date:[/bold red] '{when}' (try 'tomorrow @ 9am', 'next monday', etc.)")
+            raise typer.Exit(code=1)
+
+    task = Task(id=next_id, title=title, when=parsed_when, category=category)
     tasks.append(task)
     save_tasks(tasks)
-    print(f"[green]Added task {task.id}:[/green] {task.title}")
+
+    when_str = f" → {parsed_when.strftime('%a, %b %d @ %I:%M %p')}" if parsed_when else ""
+    cat_str = f" [{category}]" if category else ""
+    print(f"[green]Added task {task.id}:{cat_str}[/green] {task.title}{when_str}")
 
 
 @app.command()
