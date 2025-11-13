@@ -6,11 +6,11 @@ Phase 1: Core Functionality (The Must-Haves)
 
 - [X] 1.3 Fast Add Command: Implement the workweek add command with natural date parsing.
 
-- [ ] 1.4 14-Day View: Implement the workweek view command to filter and display the current 14 days in a simple list.
+- [X] 1.4 14-Day View: Implement the workweek view command to filter and display the current 14 days in a simple list.
 
 Phase 2: User Interface (The Clean Look)
 
-- [ ] 2.1 TUI Integration: Set up the Terminal User Interface framework.
+- [X] 2.1 TUI Integration: Set up the Terminal User Interface framework.
 
 - [ ] 2.2 14-Day Layout: Design the TUI screen to show the 14 days clearly, one column for each day.
 
