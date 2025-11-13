@@ -174,15 +174,61 @@ def add(
 
 
 @app.command()
-def view(days: int = 14):
-    """View tasks for next `days` days (default 14)."""
+def view(days: int = typer.Option(14, "--days", "-d", help="Number of days to show (default 14)")):
+    """View tasks for the next N days, grouped by date.
+
+    Shows unscheduled tasks first, then organizes scheduled tasks by day.
+    """
     tasks = load_tasks()
     if not tasks:
-        print("No tasks found.")
+        print("[dim]No tasks found.[/dim]")
         raise typer.Exit()
-    print(f"Showing next {days} days (placeholder)")
-    for t in tasks:
-        print(f"{t.id}: {t.title} {'[done]' if t.done else ''}")
+
+    now = datetime.now()
+    end_date = now + timedelta(days=days)
+
+    # partition tasks into unscheduled and scheduled
+    unscheduled = [t for t in tasks if t.when is None]
+    scheduled = [t for t in tasks if t.when is not None and t.when <= end_date]
+
+    # show unscheduled tasks first
+    if unscheduled:
+        print("\n[bold cyan]Unscheduled[/bold cyan]")
+        for t in unscheduled:
+            status = "[dim][done][/dim]" if t.done else ""
+            cat = f"[{t.category}] " if t.category else ""
+            print(f"  {t.id:2}. {cat}{t.title} {status}")
+
+    # group scheduled tasks by date
+    from collections import defaultdict
+    by_date = defaultdict(list)
+    for t in scheduled:
+        if t.when:
+            date_key = t.when.date()
+            by_date[date_key].append(t)
+
+    # sort dates and display
+    if by_date:
+        print()
+        for date_key in sorted(by_date.keys()):
+            tasks_on_day = by_date[date_key]
+            day_name = date_key.strftime("%a, %b %d")
+            days_away = (date_key - now.date()).days
+            if days_away == 0:
+                day_name += " (Today)"
+            elif days_away == 1:
+                day_name += " (Tomorrow)"
+            elif days_away > 1 and days_away <= 7:
+                day_name += f" (+{days_away}d)"
+
+            print(f"[bold yellow]{day_name}[/bold yellow]")
+            for t in tasks_on_day:
+                time_str = t.when.strftime("%I:%M %p") if t.when else ""
+                status = "[dim][done][/dim]" if t.done else ""
+                cat = f"[{t.category}] " if t.category else ""
+                print(f"  {t.id:2}. {time_str:12} {cat}{t.title} {status}")
+
+    print()  # blank line at end
 
 
 if __name__ == "__main__":
