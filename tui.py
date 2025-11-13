@@ -31,7 +31,8 @@ except Exception:
     Task = None
 
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, ScrollView
+from textual.widgets import Header, Footer, Static
+from textual.scroll_view import ScrollView
 
 
 class PlaceholderView(Static):
