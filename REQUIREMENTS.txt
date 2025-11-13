@@ -3,3 +3,4 @@ rich==13.3.5
 pydantic>=2.8.0
 python-dateutil==2.9.0
 parsedatetime==2.6
+textual>=6.6.0
