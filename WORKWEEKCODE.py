@@ -28,7 +28,7 @@ class Task(BaseModel):
     - `created_at` is set automatically.
     """
 
-    id: int
+    id: str
     title: str = Field(..., min_length=1)
     when: Optional[datetime] = None
     category: Optional[str] = None
@@ -114,6 +114,9 @@ def load_tasks() -> List[Task]:
         data = json.loads(raw)
         tasks: List[Task] = []
         for item in data:
+            # Convert integer id to string for backward compatibility
+            if "id" in item and isinstance(item["id"], int):
+                item["id"] = str(item["id"])
             # normalize ISO datetimes to datetime objects where possible
             if "when" in item and item["when"]:
                 try:
