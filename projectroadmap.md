@@ -12,9 +12,10 @@ Phase 2: User Interface (The Clean Look)
 
 - [X] 2.1 TUI Integration: Set up the Terminal User Interface framework.
 
-- [ ] 2.2 14-Day Layout: Design the TUI screen to show the 14 days clearly, one column for each day.
+- [X] 2.2 14-Day Layout: Design the TUI screen to show the 14 days clearly, one column for each day.
 
-- [ ] 2.3 Simple Interaction: Add keyboard controls (up/down/enter) to select, mark as done, or delete tasks directly in the TUI.
+- [X] 2.3 Simple Interaction: Add keyboard controls (up/down/enter) to select, mark as done, or delete tasks directly in the TUI.
+- [X] 2.4 Added GUI instead of a textual terminal based UI
 
 Phase 3: Polish & Robustness (The Finish)
 
