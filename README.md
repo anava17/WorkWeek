@@ -1,2 +1,20 @@
-# WorkWeek
-Simple 14 day calendar, clean, no clutter, and no extra features. A quick and easy way to check your schedule before shutting down your work for the day.
+WorkWeek Scheduler
+
+A fast, distraction-free CLI workweek scheduler focused on local, private scheduling with a 14-day view and fast add command.
+
+Installation
+
+1. Create a virtual environment (recommended):
+
+   python -m venv .venv
+   source .venv/bin/activate
+
+2. Install dependencies:
+
+   pip install -r requirements.txt
+
+Quickstart
+
+Run the CLI:
+
+   python workweek.py --help
