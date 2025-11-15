@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QDate, QDateTime, QSize, pyqtSignal, QRect
 from PyQt6.QtGui import QColor, QFont, QAction, QIcon, QPalette
 
-from workweek import load_tasks, save_tasks, Task, parse_datetime
+from workweek import load_tasks, save_tasks, Task, parse_datetime, _occurrences_between
 
 
 class TaskWidget(QFrame):
@@ -279,6 +279,12 @@ class NewTaskDialog(QDialog):
         self.category_combo = QComboBox()
         self.category_combo.addItems(["Personal", "Work", "School"])
         layout.addWidget(self.category_combo)
+
+        # Recurrence
+        layout.addWidget(QLabel("Recurrence:"))
+        self.recurrence_combo = QComboBox()
+        self.recurrence_combo.addItems(["None", "Daily", "Weekdays", "Weekly (same weekday)"])
+        layout.addWidget(self.recurrence_combo)
         
         # Buttons
         button_layout = QHBoxLayout()
@@ -304,12 +310,17 @@ class NewTaskDialog(QDialog):
             when_str = self.when_input.text().strip()
             when = parse_datetime(when_str) if when_str else None
             category = self.category_combo.currentText()
+            rec_sel = self.recurrence_combo.currentText()
+            recurrence = None if rec_sel == "None" else (
+                "daily" if rec_sel == "Daily" else ("weekdays" if rec_sel == "Weekdays" else "weekly")
+            )
             
             self.result_task = Task(
                 id=str(datetime.now().timestamp()),
                 title=title,
                 when=when,
                 category=category,
+                recurrence=recurrence,
                 done=False,
                 created_at=datetime.now()
             )
@@ -404,19 +415,25 @@ class WorkWeekGUI(QMainWindow):
             self.day_columns.append(col)
             self.grid_layout.addWidget(col)
         
-        # Distribute tasks
+        # Distribute tasks — expand recurring tasks into occurrences for the 14-day window
+        start_dt = today
+        end_dt = today + timedelta(days=13)
+        occurrences = _occurrences_between(self.tasks, start_dt, end_dt)
+
+        # Add unscheduled (non-recurring) tasks
         for task in self.tasks:
-            if task.when is None:
+            if task.when is None and not task.recurrence:
                 self.day_columns[0].add_task(task)
+
+        # Place occurrences into the appropriate day column
+        for occ in occurrences:
+            occ_date = occ.when.date()
+            for i, col in enumerate(self.day_columns[1:], start=1):
+                if col.date and col.date.date() == occ_date:
+                    col.add_task(occ)
+                    break
             else:
-                task_date = task.when.date()
-                for i, col in enumerate(self.day_columns[1:], start=1):
-                    if col.date and col.date.date() == task_date:
-                        col.add_task(task)
-                        break
-                else:
-                    # Task is outside the 14-day window, put in unscheduled
-                    self.day_columns[0].add_task(task)
+                self.day_columns[0].add_task(occ)
     
     def on_task_changed(self):
         """Refresh display and save tasks when any task changes."""
