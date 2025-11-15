@@ -33,6 +33,7 @@ class Task(BaseModel):
     when: Optional[datetime] = None
     category: Optional[str] = None
     done: bool = False
+    recurrence: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Pydantic v2 configuration
@@ -143,11 +144,84 @@ def load_tasks() -> List[Task]:
         raise
 
 
+def _occurrences_between(tasks: List[Task], start_dt: datetime, end_dt: datetime) -> List[Task]:
+    """Expand recurring tasks into individual occurrences between start_dt and end_dt.
+
+    Returns a list of Task instances (shallow copies) representing occurrences.
+    Non-recurring tasks with a `when` within range are returned as-is.
+    """
+    occs: List[Task] = []
+    weekday_map = {'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6}
+    start_date = start_dt.date()
+    end_date = end_dt.date()
+
+    for t in tasks:
+        # non-recurring scheduled tasks
+        if not t.recurrence:
+            if t.when and start_dt <= t.when <= end_dt:
+                occs.append(t)
+            continue
+
+        # recurring tasks require a base 'when' to know the time
+        if not t.when:
+            continue
+
+        rec = t.recurrence.strip().lower()
+        # iterate each day in range and test rule
+        index = 0
+        cur = max(start_date, t.when.date())
+        while cur <= end_date:
+            add_flag = False
+            if rec in ("daily", "every day"):
+                add_flag = True
+            elif rec in ("weekdays", "every weekday"):
+                if cur.weekday() < 5:
+                    add_flag = True
+            elif rec.startswith("weekly"):
+                # formats: 'weekly' => same weekday as original
+                # or 'weekly:mon,tue'
+                parts = rec.split(":", 1)
+                if len(parts) == 2 and parts[1].strip():
+                    days = [d.strip()[:3] for d in parts[1].split(",")]
+                    if any(weekday_map.get(d.lower(), -1) == cur.weekday() for d in days):
+                        add_flag = True
+                else:
+                    if cur.weekday() == t.when.weekday():
+                        add_flag = True
+            elif rec.startswith("every "):
+                # 'every monday' etc.
+                parts = rec.split()
+                if len(parts) >= 2:
+                    day = parts[1][:3]
+                    if weekday_map.get(day, -1) == cur.weekday():
+                        add_flag = True
+
+            if add_flag:
+                # create occurrence at same time as t.when
+                occ_dt = datetime.combine(cur, t.when.time())
+                occ = Task(
+                    id=f"{t.id}:{index}",
+                    title=t.title,
+                    when=occ_dt,
+                    category=t.category,
+                    done=t.done,
+                    created_at=t.created_at,
+                    recurrence=None,
+                )
+                occs.append(occ)
+                index += 1
+
+            cur = cur + timedelta(days=1)
+
+    return occs
+
+
 @app.command()
 def add(
     title: str = typer.Argument(..., help="Task title"),
     when: Optional[str] = typer.Option(None, "--when", "-w", help="When to schedule (e.g., 'tomorrow @ 9am', 'next monday')"),
     category: Optional[str] = typer.Option(None, "--category", "-c", help="Task category (e.g., 'Work', 'School')"),
+    recurrence: Optional[str] = typer.Option(None, "--recurrence", "-r", help="Recurrence rule (e.g., 'daily', 'weekdays', 'weekly:mon')"),
 ):
     """Fast add a task with optional natural language date parsing.
 
@@ -157,7 +231,16 @@ def add(
       workweek add "Quick task"  (no date specified)
     """
     tasks = load_tasks()
-    next_id = (max((t.id for t in tasks), default=0) + 1) if tasks else 1
+    # compute next numeric id safely (previously IDs may be numeric or strings)
+    def _numeric_id(x: Task) -> int:
+        try:
+            # support ids like '123' or '123:0'
+            base = str(x.id).split(":", 1)[0]
+            return int(base)
+        except Exception:
+            return 0
+
+    next_id = max((_numeric_id(t) for t in tasks), default=0) + 1
 
     # parse the when date if provided
     parsed_when = None
@@ -167,7 +250,7 @@ def add(
             print(f"[bold red]Could not parse date:[/bold red] '{when}' (try 'tomorrow @ 9am', 'next monday', etc.)")
             raise typer.Exit(code=1)
 
-    task = Task(id=next_id, title=title, when=parsed_when, category=category)
+    task = Task(id=str(next_id), title=title, when=parsed_when, category=category, recurrence=recurrence)
     tasks.append(task)
     save_tasks(tasks)
 
@@ -190,9 +273,10 @@ def view(days: int = typer.Option(14, "--days", "-d", help="Number of days to sh
     now = datetime.now()
     end_date = now + timedelta(days=days)
 
-    # partition tasks into unscheduled and scheduled
+    # partition tasks into unscheduled and scheduled (taking recurrence into account)
     unscheduled = [t for t in tasks if t.when is None]
-    scheduled = [t for t in tasks if t.when is not None and t.when <= end_date]
+    # expand recurring tasks into occurrences within the window
+    scheduled = _occurrences_between(tasks, now, end_date)
 
     # show unscheduled tasks first
     if unscheduled:
