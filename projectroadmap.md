@@ -19,7 +19,7 @@ Phase 2: User Interface (The Clean Look)
 
 Phase 3: Polish & Robustness (The Finish)
 
-- [ ] 3.1 Recurring Tasks: Add logic for tasks that repeat daily or weekly.
+- [X] 3.1 Recurring Tasks: Add logic for tasks that repeat daily or weekly.
 
 - [ ] 3.2 Error Handling: Add checks for bad user input or a corrupted JSON file.
 
