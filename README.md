@@ -18,3 +18,10 @@ Quickstart
 Run the CLI:
 
    python workweek.py --help
+
+
+Design notes
+
+- Local storage in schedule.json
+- Minimal dependencies for speed
+- "Frutiger aero" minimalist terminal aesthetic
