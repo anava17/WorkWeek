@@ -53,6 +53,7 @@ def parse_datetime(date_str: str) -> Optional[datetime]:
     Returns None if parsing fails.
     """
     if not date_str or not date_str.strip():
+        print("[red]Error: Date string is empty or invalid.[/red]")
         return None
 
     # try parsedatetime first (handles relative dates well)
@@ -62,15 +63,16 @@ def parse_datetime(date_str: str) -> Optional[datetime]:
         # parse_status: 0=no match, 1=date match, 2=time match, 3=both
         if parse_status > 0:
             return dt
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[red]Error: Failed to parse date with parsedatetime: {e}[/red]")
 
     # fall back to dateutil parser (handles ISO & other formats)
     try:
         return dateutil_parser.parse(date_str, fuzzy=False)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[red]Error: Failed to parse date with dateutil: {e}[/red]")
 
+    print(f"[red]Error: Could not parse date string '{date_str}'.[/red]")
     return None
 
 
