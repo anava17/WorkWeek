@@ -21,8 +21,8 @@ Phase 3: Polish & Robustness (The Finish)
 
 - [X] 3.1 Recurring Tasks: Add logic for tasks that repeat daily or weekly.
 
-- [ ] 3.2 Error Handling: Add checks for bad user input or a corrupted JSON file.
+- [X] 3.2 Error Handling: Add checks for bad user input or a corrupted JSON file.
 
-- [ ] 3.3 Color Coding: Use colors (e.g., Work = Blue, School = Green) for easy category viewing.
+- [X] 3.3 Color Coding: Use colors (e.g., Work = Blue, School = Green) for easy category viewing.
 
-- [ ] 3.4 Packaging: Prepare the application for easy installation via pip (create pyproject.toml).
+- [X] 3.4 Packaging: Prepare the application for easy installation via pip (create pyproject.toml).
